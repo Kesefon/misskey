@@ -279,6 +279,14 @@ export class ApInboxService {
 		const unlock = await this.appLockService.getApLock(uri);
 
 		try {
+			// If the announced object is not a post (for example Lemmy-communities announce Likes)
+			// Just create the announced object and don't renote it
+			if (!isPost(activity)) {
+				this.logger.info(`Received non Post announcement: ${JSON.stringify(activity)} from ${JSON.stringify(actor)}`);
+				await this.performActivity(actor, activity);
+				return;
+			}
+
 			// 既に同じURIを持つものが登録されていないかチェック
 			const exist = await this.apNoteService.fetchNote(uri);
 			if (exist) {
