@@ -217,12 +217,19 @@ export class ApNoteService {
 		// TODO: attachmentは必ずしもImageではない
 		// TODO: attachmentは必ずしも配列ではない
 		const limit = promiseLimit<MiDriveFile>(2);
-		const files = (await Promise.all(toArray(note.attachment).map(attach => (
-			limit(() => this.apImageService.resolveImage(actor, {
-				...attach,
-				sensitive: note.sensitive, // Noteがsensitiveなら添付もsensitiveにする
-			}))
-		))));
+		const files = (await Promise.all(toArray(note.attachment).map(attach => {
+			switch (attach.type) {
+				case 'Link': {
+					return null;
+				}
+				default:
+					// Assume Image by default
+					return limit(() => this.apImageService.resolveImage(actor, {
+						...attach,
+						sensitive: note.sensitive, // Noteがsensitiveなら添付もsensitiveにする
+					}));
+			}
+		}))).filter(isNotNull);
 
 		// リプライ
 		const reply: MiNote | null = note.inReplyTo
