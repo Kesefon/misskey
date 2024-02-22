@@ -24,6 +24,7 @@ import { StatusError } from '@/misc/status-error.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { checkHttps } from '@/misc/check-https.js';
+import { isNotNull } from '@/misc/is-not-null.js';
 import { getOneApId, getApId, getOneApHrefNullable, validPost, isEmoji, getApType } from '../type.js';
 import { ApLoggerService } from '../ApLoggerService.js';
 import { ApMfmService } from '../ApMfmService.js';
@@ -37,7 +38,6 @@ import { ApQuestionService } from './ApQuestionService.js';
 import { ApImageService } from './ApImageService.js';
 import type { Resolver } from '../ApResolverService.js';
 import type { IObject, IPost } from '../type.js';
-import { isNotNull } from '@/misc/is-not-null.js';
 
 @Injectable()
 export class ApNoteService {
@@ -178,12 +178,19 @@ export class ApNoteService {
 		// TODO: attachmentは必ずしもImageではない
 		// TODO: attachmentは必ずしも配列ではない
 		const limit = promiseLimit<MiDriveFile>(2);
-		const files = (await Promise.all(toArray(note.attachment).map(attach => (
-			limit(() => this.apImageService.resolveImage(actor, {
-				...attach,
-				sensitive: note.sensitive, // Noteがsensitiveなら添付もsensitiveにする
-			}))
-		))));
+		const files = (await Promise.all(toArray(note.attachment).map(attach => {
+			switch (attach.type) {
+				case 'Link': {
+					return null;
+				}
+				default:
+					// Assume Image by default
+					return limit(() => this.apImageService.resolveImage(actor, {
+						...attach,
+						sensitive: note.sensitive, // Noteがsensitiveなら添付もsensitiveにする
+					}));
+			}
+		}))).filter(isNotNull);
 
 		// リプライ
 		const reply: MiNote | null = note.inReplyTo
