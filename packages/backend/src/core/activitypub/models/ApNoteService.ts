@@ -220,7 +220,11 @@ export class ApNoteService {
 		const files = (await Promise.all(toArray(note.attachment).map(attach => {
 			switch (attach.type) {
 				case 'Link': {
-					return null;
+					return note.image ? // Lemmy uses this for previews, if the link is an image
+						limit(() => this.apImageService.resolveImage(actor, {
+							...note.image,
+							sensitive: note.sensitive, // Noteがsensitiveなら添付もsensitiveにする
+						})) : null;
 				}
 				default:
 					// Assume Image by default
