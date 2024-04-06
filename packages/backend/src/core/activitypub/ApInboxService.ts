@@ -282,7 +282,7 @@ export class ApInboxService {
 			// If the announced object is a like
 			// Just create the like and don't renote it
 			// I don't think this does any authenticity checks, but ¯\_(ツ)_/¯
-			if (isLike(<IObject>activity.object)) {
+			if (typeof activity.object === 'object' && isLike(<IObject>activity.object)) {
 				const like = <ILike> activity.object;
 				const actor = await this.apPersonService.resolvePerson(<string>like.actor);
 				this.logger.info(`Received Like announcement: ${JSON.stringify(activity)} from ${JSON.stringify(actor.usernameLower)}`);
@@ -292,8 +292,8 @@ export class ApInboxService {
 
 			// The following code assumes that only posts can be announced
 			// To avoid errors we bail out early
-			if (!isPost(<IObject>activity.object)) {
-				this.logger.warn(`announce type unsupported: ${typeof activity.object === 'string' ? activity.object : activity.object.type}`);
+			if (typeof activity.object === 'object' && !isPost(<IObject>activity.object)) {
+				this.logger.warn(`announce type unsupported: ${activity.object.type}`);
 				return;
 			}
 
