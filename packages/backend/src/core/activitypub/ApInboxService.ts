@@ -290,6 +290,13 @@ export class ApInboxService {
 				return;
 			}
 
+			// The following code assumes that only posts can be announced
+			// To avoid errors we bail out early
+			if (!isPost(<IObject>activity.object)) {
+				this.logger.warn(`announce type unsupported: ${typeof activity.object === 'string' ? activity.object : activity.object.type}`);
+				return;
+			}
+
 			// 既に同じURIを持つものが登録されていないかチェック
 			const exist = await this.apNoteService.fetchNote(uri);
 			if (exist) {
