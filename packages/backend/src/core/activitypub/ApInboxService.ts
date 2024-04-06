@@ -279,11 +279,14 @@ export class ApInboxService {
 		const unlock = await this.appLockService.getApLock(uri);
 
 		try {
-			// If the announced object is not a post (for example Lemmy-communities announce Likes)
-			// Just create the announced object and don't renote it
-			if (!isPost(activity)) {
-				this.logger.info(`Received non Post announcement: ${JSON.stringify(activity)} from ${JSON.stringify(actor)}`);
-				await this.performActivity(actor, activity);
+			// If the announced object is a like
+			// Just create the like and don't renote it
+			// I don't think this does any authenticity checks, but ¯\_(ツ)_/¯
+			if (isLike(<IObject>activity.object)) {
+				const like = <ILike> activity.object;
+				const actor = await this.apPersonService.resolvePerson(<string>like.actor);
+				this.logger.info(`Received Like announcement: ${JSON.stringify(activity)} from ${JSON.stringify(actor.usernameLower)}`);
+				await this.like(<MiRemoteUser>actor, like);
 				return;
 			}
 
